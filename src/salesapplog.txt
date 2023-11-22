@@ -1,0 +1,4 @@
+Nov 22, 2023 2:30:25 PM SalesLogger logWarning
+WARNING: Order placed for customer: John Doe
+Nov 22, 2023 2:30:25 PM SalesLogger logWarning
+WARNING: Total Order Price: $49.98
