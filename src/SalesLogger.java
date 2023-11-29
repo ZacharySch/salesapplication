@@ -1,5 +1,3 @@
-// This class manages logging for the sales application.
-
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -18,7 +16,7 @@ public class SalesLogger {
 
             // Setting the logging level to WARNING.
             logger.setLevel(Level.WARNING);
-            
+
             // Adding the file handler to the logger.
             logger.addHandler(fileHandler);
         } catch (IOException e) {
@@ -34,5 +32,10 @@ public class SalesLogger {
     // Method to log an exception with a specified log level.
     public static void logException(Level level, String message, Throwable throwable) {
         logger.log(level, message, throwable);
+    }
+
+    // New method to log that an order has been added to the database
+    public static void logOrderAdded(int orderId) {
+        logger.info("Order added to the database with ID: " + orderId);
     }
 }
