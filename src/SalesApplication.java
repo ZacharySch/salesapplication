@@ -13,38 +13,43 @@ public class SalesApplication {
             DatabaseManager.createCustomerTable();
             DatabaseManager.createOrderTable();
 
-            // Creating a customer
-            Customer customer = createCustomer(scanner);
+            // Display the main menu
+            int choice;
+            do {
+                displayMainMenu();
+                choice = getChoice(scanner);
 
-            // Inserting the customer into the database
-            insertCustomerIntoDatabase(customer);
-
-            // Logging a warning message
-            SalesLogger.logWarning("Order placed for customer: " + customer.getName());
-
-            // Collecting product information from the user
-            List<Product> products = getProductsFromUser(scanner);
-
-            // Creating an order for the customer
-            Order order = new Order(customer);
-
-            // Adding products to the order
-            for (Product product : products) {
-                order.addProduct(product);
-            }
-
-            // Calculating and displaying the total order price
-            double total = order.calculateTotal();
-            System.out.println("Total Order Price: $" + total);
-
-            // Logging the total order price
-            SalesLogger.logWarning("Total Order Price: $" + total);
-
-            // Adding the customer and order details to the database
-            DatabaseManager.addOrder(order);
-
-            // Retrieving and displaying customers from the database
-            DatabaseManager.displayCustomers();
+                switch (choice) {
+                    case 1:
+                        // Add a new customer
+                        Customer newCustomer = createCustomer(scanner);
+                        insertCustomerIntoDatabase(newCustomer);
+                        break;
+                    case 2:
+                        // Add a new sale
+                        addSale(scanner);
+                        break;
+                    case 3:
+                        // Add both a new customer and a new sale
+                        Customer customerForSale = createCustomer(scanner);
+                        insertCustomerIntoDatabase(customerForSale);
+                        addSale(scanner, customerForSale);
+                        break;
+                    case 4:
+                        // Display customers from the database
+                        DatabaseManager.displayCustomers();
+                        break;
+                    case 5:
+                        // Print recent sales
+                        printRecentSales();
+                        break;
+                    case 0:
+                        System.out.println("Exiting the application. Thank you!");
+                        break;
+                    default:
+                        System.out.println("Invalid choice. Please try again.");
+                }
+            } while (choice != 0);
         } catch (Exception e) {
             // Logging an exception if one occurs
             SalesLogger.logException(Level.SEVERE, "An exception occurred", e);
@@ -53,6 +58,96 @@ public class SalesApplication {
             if (scanner != null) {
                 scanner.close();
             }
+        }
+    }
+
+    private static void displayMainMenu() {
+        System.out.println("===== Main Menu =====");
+        System.out.println("1. Add a new customer");
+        System.out.println("2. Add a new sale");
+        System.out.println("3. Add both a new customer and a new sale");
+        System.out.println("4. Display customers");
+        System.out.println("5. Print recent sales");
+        System.out.println("0. Exit");
+        System.out.println("==================");
+        System.out.print("Enter your choice: ");
+    }
+
+    private static int getChoice(Scanner scanner) {
+        int choice = -1;
+        while (!scanner.hasNextInt()) {
+            System.out.println("Invalid input. Please enter a number.");
+            scanner.next();
+        }
+        choice = scanner.nextInt();
+        scanner.nextLine();
+        return choice;
+    }
+
+    private static void addSale(Scanner scanner) {
+        // Collecting product information from the user
+        List<Product> products = getProductsFromUser(scanner);
+
+        // Creating an order for the customer (a new customer will be created for the sale)
+        Order order = new Order(new Customer("", ""));
+
+        // Adding products to the order
+        for (Product product : products) {
+            order.addProduct(product);
+        }
+
+        // Calculating and displaying the total order price
+        double total = order.calculateTotal();
+        System.out.println("Total Order Price: $" + total);
+
+        // Logging the total order price
+        SalesLogger.logWarning("Total Order Price: $" + total);
+
+        // Adding the customer and order details to the database
+        DatabaseManager.addOrder(order);
+    }
+
+    private static void addSale(Scanner scanner, Customer existingCustomer) {
+        // Collecting product information from the user
+        List<Product> products = getProductsFromUser(scanner);
+
+        // Creating an order for the existing customer
+        Order order = new Order(existingCustomer);
+
+        // Adding products to the order
+        for (Product product : products) {
+            order.addProduct(product);
+        }
+
+        // Calculating and displaying the total order price
+        double total = order.calculateTotal();
+        System.out.println("Total Order Price: $" + total);
+
+        // Logging the total order price
+        SalesLogger.logWarning("Total Order Price: $" + total);
+
+        // Adding the customer and order details to the database
+        DatabaseManager.addOrder(order);
+    }
+
+    private static void printRecentSales() {
+        try (Connection connection = DatabaseManager.getConnection();
+             Statement statement = connection.createStatement()) {
+
+            // Retrieve the last 3 orders from the OrderProduct table
+            String recentSalesQuery = "SELECT * FROM OrderProduct ORDER BY id DESC LIMIT 3";
+            try (ResultSet resultSet = statement.executeQuery(recentSalesQuery)) {
+                System.out.println("Recent Sales:");
+                while (resultSet.next()) {
+                    int orderId = resultSet.getInt("order_id");
+                    String productName = resultSet.getString("product_name");
+                    double productPrice = resultSet.getDouble("product_price");
+
+                    System.out.println("Order ID: " + orderId + ", Product: " + productName + ", Price: $" + productPrice);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
@@ -72,7 +167,7 @@ public class SalesApplication {
             // Inserting the customer into the database
             Connection connection = DatabaseManager.getConnection();
             String insertCustomerSQL = "INSERT INTO Customer (name, email) VALUES (?, ?)";
-            
+
             try (PreparedStatement preparedStatement = connection.prepareStatement(insertCustomerSQL, Statement.RETURN_GENERATED_KEYS)) {
                 preparedStatement.setString(1, customer.getName());
                 preparedStatement.setString(2, customer.getEmail());
